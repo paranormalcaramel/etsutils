@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ETSUtils</title>
+</head>
+<body>
+<p><a href="../index.html">Home Page</a></p>
+<h1>Power Order Calculator</h1>
+
+<p> <b>INSTRUCTIONS</b>: Fill in the required fields. If you are unable to locate the head pressure or the power order, visit 
+    <a href="https://ets.paragon.directory/documentation/technical-handbook/hydroelectric-dam">the Hydroelectric Dam guide</a>. 
+    Make sure to maintain a healthy excess to prevent a blackout due to head pressure going to low or a sudden upregulation power order. 
+    <br>In addition, pay attention to head pressure as a sudden spike during rain could overpressure the turbines.
+    <br>You take responsibility for all actions you take with the advice of this utility. In addition, the answers may not be perfect.
+</p>
+
+<form id="userinputs">
+    <p>Select the method you would like to use below:</p>
+    <input type="radio" id="distribute" name="method" value="distribute" checked>
+    <label for="distribute">Distribute pressure equally across all turbines.</label><br>
+
+    <input type="radio" id="conserve" name="method" value="conserve">
+    <label for="conserve">Conserve oil by using as few turbines as possible.</label><br><br>
+
+    <label for="pressure">Head Pressure (PSI):</label>
+    <input type="number" id="pressure" name="pressure" min="0" step="1"><br><br>
+
+    <label for="order">Power Order (MWh):</label>
+    <input type="number" id="order" name="order" min="0" step="1"><br><br>
+
+    <button type="submit">Submit</button>
+</form>
+
+<h3 id="totalPower">Total Power Generated: --- MWh</h3>
+<h3 id="notes">Notes: ---</h3>
+
+<p id="turbine1">Turbine 1: --- MWh (Valve Setting: ---)</p>
+<p id="turbine2">Turbine 2: --- MWh (Valve Setting: ---)</p>
+<p id="turbine3">Turbine 3: --- MWh (Valve Setting: ---)</p>
+<p id="turbine4">Turbine 4: --- MWh (Valve Setting: ---)</p>
+<p id="turbine5">Turbine 5: --- MWh (Valve Setting: ---)</p>
+<p id="turbine6">Turbine 6: --- MWh (Valve Setting: ---)</p>
+<p id="turbine7">Turbine 7: --- MWh (Valve Setting: ---)</p>
+
+<script>
+    const form = document.getElementById('userinputs');
+    
+    form.addEventListener('submit', function(event) {
+        event.preventDefault();
+    
+        const method = form.elements['method'].value;
+        const headPressure = parseFloat(form.elements['pressure'].value);
+        const powerOrder = parseFloat(form.elements['order'].value);
+        const turbines = 7;
+        const maxPerTurbine = 135; // Maximum safe turbine output
+        const turbinePowers = new Array(turbines).fill(0);
+        const turbineValves = new Array(turbines).fill(0);
+    
+        if (method === 'distribute') {
+            const perTurbine = powerOrder / turbines;
+            for (let i = 0; i < turbines; i++) {
+                // Valve needed for desired power
+                let valve = perTurbine / headPressure;
+                if (valve > 1) valve = 1; // Max valve = 1
+                let power = Math.min(valve * headPressure, maxPerTurbine);
+                turbineValves[i] = valve;
+                turbinePowers[i] = power;
+            }
+        } else if (method === 'conserve') {
+            let remaining = powerOrder;
+            for (let i = 0; i < turbines; i++) {
+                if (remaining <= 0) break;
+                // Desired turbine power is min(remaining, maxPerTurbine)
+                let desiredPower = Math.min(remaining, maxPerTurbine);
+                // Compute required valve
+                let valve = desiredPower / headPressure;
+                if (valve > 1) valve = 1; // Cap valve
+                let power = Math.min(valve * headPressure, maxPerTurbine); // Actual power
+                turbineValves[i] = valve;
+                turbinePowers[i] = power;
+                remaining -= power; // Subtract **actual power generated**
+            }
+        }
+    
+        const totalPower = turbinePowers.reduce((a,b) => a+b, 0);
+        let notes = 'Success';
+        
+        // Notes
+        if (powerOrder > headPressure * turbines) notes = 'Not enough pressure to meet the power order.';
+        if (powerOrder > maxPerTurbine * turbines) notes = 'Power order exceeds maximum safe turbine output.';
+        document.getElementById('totalPower').textContent = `Total Power Generated: ${totalPower.toFixed(2)} MWh`;
+        document.getElementById('notes').textContent = `Notes: ${notes}`;
+
+        if (notes !== 'Success') {
+            document.getElementById('totalPower').style.color = 'red';
+        } else {
+            document.getElementById('totalPower').style.color = 'black';
+        }
+    
+        for (let i = 0; i < turbines; i++) {
+            document.getElementById(`turbine${i+1}`).innerHTML = 
+                `Turbine ${i+1}: <b>${turbinePowers[i].toFixed(2)}</b> MWh (Wicket Valve Setting: <b>${(turbineValves[i]*100).toFixed(0)}%</b>)`;
+        }
+
+    });
+</script>
+</body>
+<footer>
+    <hr>
+    <p>Made by @CoolEngine079</p>
+    <p>Contact: paranormal.caramel on discord</p>
+    <p>Copyright: <a href="LICENSE">LICENSE</a></p>
+  </footer>
+</html>
