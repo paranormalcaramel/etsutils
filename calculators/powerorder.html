@@ -8,108 +8,141 @@
 <p><a href="../index.html">Home Page</a></p>
 <h1>Power Order Calculator</h1>
 
-<p> <b>INSTRUCTIONS</b>: Fill in the required fields. If you are unable to locate the head pressure or the power order, visit 
-    <a href="https://ets.paragon.directory/documentation/technical-handbook/hydroelectric-dam">the Hydroelectric Dam guide</a>. 
-    Make sure to maintain a healthy excess to prevent a blackout due to head pressure going to low or a sudden upregulation power order. 
-    <br>In addition, pay attention to head pressure as a sudden spike during rain could overpressure the turbines.
-    <br>You take responsibility for all actions you take with the advice of this utility. In addition, the answers may not be perfect.
+<p><b>INSTRUCTIONS:</b> Fill in the required fields. If you are unable to locate the head pressure or the power order, visit 
+  <a href="https://ets.paragon.directory/documentation/technical-handbook/hydroelectric-dam">the Hydroelectric Dam guide</a>. 
+  Maintain a healthy excess to prevent a blackout due to low head pressure or sudden upregulation.  
+  Watch for head pressure spikes during rain, which may overpressure the turbines.
 </p>
 
 <form id="userinputs">
-    <p>Select the method you would like to use below:</p>
-    <input type="radio" id="distribute" name="method" value="distribute" checked>
-    <label for="distribute">Distribute pressure equally across all turbines.</label><br>
+  <p><b>Select the method you would like to use below:</b></p>
+  <input type="radio" id="distribute" name="method" value="distribute" checked>
+  <label for="distribute">Distribute pressure equally across all turbines.</label><br>
 
-    <input type="radio" id="conserve" name="method" value="conserve">
-    <label for="conserve">Conserve oil by using as few turbines as possible.</label><br><br>
+  <input type="radio" id="conserve" name="method" value="conserve">
+  <label for="conserve">Conserve oil by using as few turbines as possible.</label><br><br>
 
-    <label for="pressure">Head Pressure (PSI):</label>
-    <input type="number" id="pressure" name="pressure" min="0" step="1"><br><br>
+  <label for="pressure">Head Pressure (PSI):</label>
+  <input type="number" id="pressure" name="pressure" min="0" step="1" placeholder="e.g. 150"><br><br>
 
-    <label for="order">Power Order (MWh):</label>
-    <input type="number" id="order" name="order" min="0" step="1"><br><br>
+  <label for="order">Power Order (MWh):</label>
+  <input type="number" id="order" name="order" min="0" step="1" placeholder="e.g. 700"><br><br>
 
-    <button type="submit">Submit</button>
+  <label><b>Select turbines out of service:</b></label><br>
+  <small>(Check any turbines currently down for maintenance or emergency)</small><br>
+  <div id="turbineOutages">
+    <label><input type="checkbox" name="down" value="1"> Turbine 1</label><br>
+    <label><input type="checkbox" name="down" value="2"> Turbine 2</label><br>
+    <label><input type="checkbox" name="down" value="3"> Turbine 3</label><br>
+    <label><input type="checkbox" name="down" value="4"> Turbine 4</label><br>
+    <label><input type="checkbox" name="down" value="5"> Turbine 5</label><br>
+    <label><input type="checkbox" name="down" value="6"> Turbine 6</label><br>
+    <label><input type="checkbox" name="down" value="7"> Turbine 7</label><br>
+  </div><br>
+
+  <button type="submit">Submit</button>
 </form>
 
 <h3 id="totalPower">Total Power Generated: --- MWh</h3>
 <h3 id="notes">Notes: ---</h3>
 
-<p id="turbine1">Turbine 1: --- MWh (Valve Setting: ---)</p>
-<p id="turbine2">Turbine 2: --- MWh (Valve Setting: ---)</p>
-<p id="turbine3">Turbine 3: --- MWh (Valve Setting: ---)</p>
-<p id="turbine4">Turbine 4: --- MWh (Valve Setting: ---)</p>
-<p id="turbine5">Turbine 5: --- MWh (Valve Setting: ---)</p>
-<p id="turbine6">Turbine 6: --- MWh (Valve Setting: ---)</p>
-<p id="turbine7">Turbine 7: --- MWh (Valve Setting: ---)</p>
+<div id="turbineOutputs">
+  <p id="turbine1">Turbine 1: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine2">Turbine 2: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine3">Turbine 3: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine4">Turbine 4: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine5">Turbine 5: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine6">Turbine 6: --- MWh (Valve Setting: ---)</p>
+  <p id="turbine7">Turbine 7: --- MWh (Valve Setting: ---)</p>
+</div>
 
 <script>
-    const form = document.getElementById('userinputs');
-    
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-    
-        const method = form.elements['method'].value;
-        const headPressure = parseFloat(form.elements['pressure'].value);
-        const powerOrder = parseFloat(form.elements['order'].value);
-        const turbines = 7;
-        const maxPerTurbine = 135; // Maximum safe turbine output
-        const turbinePowers = new Array(turbines).fill(0);
-        const turbineValves = new Array(turbines).fill(0);
-    
-        if (method === 'distribute') {
-            const perTurbine = powerOrder / turbines;
-            for (let i = 0; i < turbines; i++) {
-                // Valve needed for desired power
-                let valve = perTurbine / headPressure;
-                if (valve > 1) valve = 1; // Max valve = 1
-                let power = Math.min(valve * headPressure, maxPerTurbine);
-                turbineValves[i] = valve;
-                turbinePowers[i] = power;
-            }
-        } else if (method === 'conserve') {
-            let remaining = powerOrder;
-            for (let i = 0; i < turbines; i++) {
-                if (remaining <= 0) break;
-                // Desired turbine power is min(remaining, maxPerTurbine)
-                let desiredPower = Math.min(remaining, maxPerTurbine);
-                // Compute required valve
-                let valve = desiredPower / headPressure;
-                if (valve > 1) valve = 1; // Cap valve
-                let power = Math.min(valve * headPressure, maxPerTurbine); // Actual power
-                turbineValves[i] = valve;
-                turbinePowers[i] = power;
-                remaining -= power; // Subtract **actual power generated**
-            }
-        }
-    
-        const totalPower = turbinePowers.reduce((a,b) => a+b, 0);
-        let notes = 'Success';
-        
-        // Notes
-        if (powerOrder > headPressure * turbines) notes = 'Not enough pressure to meet the power order.';
-        if (powerOrder > maxPerTurbine * turbines) notes = 'Power order exceeds maximum safe turbine output.';
-        document.getElementById('totalPower').textContent = `Total Power Generated: ${totalPower.toFixed(2)} MWh`;
-        document.getElementById('notes').textContent = `Notes: ${notes}`;
+const form = document.getElementById('userinputs');
 
-        if (notes !== 'Success') {
-            document.getElementById('totalPower').style.color = 'red';
-        } else {
-            document.getElementById('totalPower').style.color = 'black';
-        }
-    
-        for (let i = 0; i < turbines; i++) {
-            document.getElementById(`turbine${i+1}`).innerHTML = 
-                `Turbine ${i+1}: <b>${turbinePowers[i].toFixed(2)}</b> MWh (Wicket Valve Setting: <b>${(turbineValves[i]*100).toFixed(0)}%</b>)`;
-        }
+form.addEventListener('submit', function(event) {
+  event.preventDefault();
 
-    });
+  const method = form.elements['method'].value;
+  const headPressure = parseFloat(form.elements['pressure'].value);
+  const powerOrder = parseFloat(form.elements['order'].value);
+  const turbines = 7;
+  const maxPerTurbine = 135; // Maximum safe turbine output
+  const turbinePowers = new Array(turbines).fill(0);
+  const turbineValves = new Array(turbines).fill(0);
+
+  if (isNaN(headPressure) || isNaN(powerOrder) || headPressure <= 0 || powerOrder <= 0) {
+    alert("Please enter valid positive numbers for head pressure and power order.");
+    return;
+  }
+
+  // Determine which turbines are out of service
+  const downed = Array.from(document.querySelectorAll('input[name="down"]:checked')).map(x => parseInt(x.value));
+  const activeTurbines = turbines - downed.length;
+
+  if (activeTurbines <= 0) {
+    document.getElementById('notes').textContent = "Notes: All turbines are out of service (if you get this in a public server you're actually cooked)";
+    document.getElementById('totalPower').textContent = "Total Power Generated: 0 MWh";
+    // document.getElementById('totalPower').style.color = "red";
+    for (let i = 0; i < turbines; i++) {
+      document.getElementById(`turbine${i+1}`).innerHTML = `Turbine ${i+1}: <b>OFFLINE</b>`;
+    }
+    return;
+  }
+
+  // Calculation
+  if (method === 'distribute') {
+    const perTurbine = powerOrder / activeTurbines;
+    for (let i = 0; i < turbines; i++) {
+      if (downed.includes(i+1)) continue; // skip offline turbines
+      let valve = perTurbine / headPressure;
+      if (valve > 1) valve = 1;
+      let power = Math.min(valve * headPressure, maxPerTurbine);
+      turbineValves[i] = valve;
+      turbinePowers[i] = power;
+    }
+  } else if (method === 'conserve') {
+    let remaining = powerOrder;
+    for (let i = 0; i < turbines; i++) {
+      if (downed.includes(i+1)) continue;
+      if (remaining <= 0) break;
+      let desiredPower = Math.min(remaining, maxPerTurbine);
+      let valve = desiredPower / headPressure;
+      if (valve > 1) valve = 1;
+      let power = Math.min(valve * headPressure, maxPerTurbine);
+      turbineValves[i] = valve;
+      turbinePowers[i] = power;
+      remaining -= power;
+    }
+  }
+
+  // Totals & Notes
+  const totalPower = turbinePowers.reduce((a,b) => a+b, 0);
+  let notes = 'Success';
+  if (powerOrder > headPressure * activeTurbines) notes = 'Not enough pressure to meet the power order.';
+  else if (powerOrder > maxPerTurbine * activeTurbines) notes = 'Power order exceeds maximum safe turbine output.';
+  if (downed.length > 0) notes += ` (${downed.length} turbine${downed.length>1?'s':''} offline)`;
+
+  // Display
+  document.getElementById('totalPower').textContent = `Total Power Generated: ${totalPower.toFixed(2)} MWh`;
+  document.getElementById('totalPower').style.color = notes.startsWith('Success') ? 'black' : 'red';
+  document.getElementById('notes').textContent = `Notes: ${notes}`;
+
+  for (let i = 0; i < turbines; i++) {
+    if (downed.includes(i+1)) {
+      document.getElementById(`turbine${i+1}`).innerHTML = `Turbine ${i+1}: <b>OFFLINE</b>`;
+    } else {
+      document.getElementById(`turbine${i+1}`).innerHTML = 
+        `Turbine ${i+1}: <b>${turbinePowers[i].toFixed(2)}</b> MWh (Wicket Valve Setting: <b>${(turbineValves[i]*100).toFixed(0)}%</b>)`;
+    }
+  }
+});
 </script>
-</body>
+
 <footer>
-    <hr>
-    <p>Made by @CoolEngine079</p>
-    <p>Contact: paranormal.caramel on discord</p>
-    <p>Copyright: <a href="../LICENSE">LICENSE</a></p>
-  </footer>
+  <hr>
+  <p>Made by @CoolEngine079</p>
+  <p>Contact: paranormal.caramel on Discord</p>
+  <p>Copyright: <a href="../LICENSE">LICENSE</a></p>
+</footer>
+</body>
 </html>
